@@ -12,14 +12,14 @@ import (
 )
 
 var (
-	apiKey = flag.String("k", "", "hypixel API key")
-	checkInterval = flag.Duration("d", time.Minute, "time between two checks")
+	apiKey         = flag.String("k", "", "hypixel API key")
+	checkInterval  = flag.Duration("d", time.Minute, "time between two checks")
 	discordWebhook = flag.String("w", "", "webhook url used to notify users on discord")
 )
 
 var (
 	discordNameRegex = regexp.MustCompile(`^\d{18}$`)
-	discordNotifier *DiscordNotifier
+	discordNotifier  *DiscordNotifier
 )
 
 func check(user *User) {
@@ -30,6 +30,7 @@ func check(user *User) {
 	}
 
 	if online {
+		user.last = ""
 		return
 	}
 
@@ -39,14 +40,15 @@ func check(user *User) {
 		return
 	}
 
-	if len(items) > 0 && user.last != strings.Join(items, "") {
+	itemsStr := strings.Join(items, ", ")
+	if len(items) > 0 && user.last != itemsStr {
 		if discordNotifier != nil && discordNameRegex.MatchString(user.notif) {
-			err := discordNotifier.send(user.notif, items)
+			err := discordNotifier.send(user.notif, itemsStr)
 			if err != nil {
 				log.Println(err)
 			}
 		} else {
-			n := notigo.NewNotification("Hypixel - Skyblock", fmt.Sprintf("You still have the following item(s) on you: %s.", strings.Join(items, ", ")))
+			n := notigo.NewNotification("Hypixel - Skyblock", fmt.Sprintf("You still have the following item(s) on you: %s.", itemsStr))
 			key := notigo.Key(user.notif)
 			err := key.Send(n)
 			if err != nil {
@@ -54,7 +56,7 @@ func check(user *User) {
 			}
 		}
 	}
-	user.last = strings.Join(items, "")
+	user.last = itemsStr
 }
 
 func checkLoop(user *User) {

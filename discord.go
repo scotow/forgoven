@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 type DiscordNotifier struct {
@@ -16,9 +15,9 @@ type DiscordMessage struct {
 	Content string `json:"content"`
 }
 
-func (dn *DiscordNotifier) send(user string, items []string) error {
+func (dn *DiscordNotifier) send(user string, items string) error {
 	message := DiscordMessage{
-		Content: fmt.Sprintf("<@%s>, you still have the following item(s) on you: %s.", user, strings.Join(items, ", ")),
+		Content: fmt.Sprintf("<@%s>, you still have the following item(s) on you: %s.", user, items),
 	}
 	data, err := json.Marshal(&message)
 	if err != nil {
