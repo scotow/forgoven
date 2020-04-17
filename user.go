@@ -15,15 +15,15 @@ import (
 )
 
 type User struct {
-	id uuid.UUID
+	id      uuid.UUID
 	profile string
-	notif string
-	object []string
-	last string
+	notif   string
+	object  []string
+	last    string
 }
 
 type MojangResponse struct {
-	Id string `json:"id"`
+	Id   string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -70,6 +70,10 @@ type OnlineResponse struct {
 
 func (u *User) isOnline(apiKey string) (bool, error) {
 	resp, err := http.Get(fmt.Sprintf("https://api.hypixel.net/status?key=%s&uuid=%s", apiKey, u.id.String()))
+	if err != nil {
+		return false, errors.New("api is offline")
+	}
+
 	if resp.StatusCode != 200 {
 		return false, err
 	}
@@ -89,10 +93,10 @@ func (u *User) isOnline(apiKey string) (bool, error) {
 
 type ProfileResponse struct {
 	Success bool `json:"success"`
-	Player struct{
-		Id string `json:"uuid"`
-		Stats struct{
-			SkyBlock struct{
+	Player  struct {
+		Id    string `json:"uuid"`
+		Stats struct {
+			SkyBlock struct {
 				Profiles map[string]SkyblockProfile `json:"profiles"`
 			} `json:"SkyBlock"`
 		} `json:"stats"`
@@ -101,14 +105,14 @@ type ProfileResponse struct {
 
 type SkyblockProfile struct {
 	ProfileId string `json:"profile_id"`
-	CuteName string `json:"cute_name"`
+	CuteName  string `json:"cute_name"`
 }
 
 type SkyblockResponse struct {
 	Success bool `json:"success"`
-	Profile struct{
-		Members map[string]struct{
-			Inventory SkyblockContainer `json:"inv_contents"`
+	Profile struct {
+		Members map[string]struct {
+			Inventory  SkyblockContainer `json:"inv_contents"`
 			Enderchest SkyblockContainer `json:"ender_chest_contents"`
 		} `json:"members"`
 	} `json:"profile"`
@@ -120,6 +124,10 @@ type SkyblockContainer struct {
 
 func (u *User) hasItems(apiKey string) ([]string, error) {
 	resp, err := http.Get(fmt.Sprintf("https://api.hypixel.net/player?key=%s&uuid=%s", apiKey, u.id.String()))
+	if err != nil {
+		return nil, errors.New("api is offline")
+	}
+
 	if resp.StatusCode != 200 {
 		return nil, err
 	}
@@ -148,6 +156,10 @@ func (u *User) hasItems(apiKey string) ([]string, error) {
 	}
 
 	resp, err = http.Get(fmt.Sprintf("https://api.hypixel.net/skyblock/profile?key=%s&profile=%s", apiKey, sbProfile.ProfileId))
+	if err != nil {
+		return nil, errors.New("api is offline")
+	}
+
 	if resp.StatusCode != 200 {
 		return nil, err
 	}
