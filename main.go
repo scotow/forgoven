@@ -43,12 +43,12 @@ func check(user *User) {
 	itemsStr := strings.Join(items, ", ")
 	if len(items) > 0 && user.last != itemsStr {
 		if discordNotifier != nil && discordNameRegex.MatchString(user.notif) {
-			err := discordNotifier.send(user.notif, itemsStr)
+			err := discordNotifier.send(user.notif, itemsStr, len(items))
 			if err != nil {
 				log.Println(err)
 			}
 		} else {
-			n := notigo.NewNotification("Hypixel - Skyblock", fmt.Sprintf("You still have the following item(s) on you: %s.", itemsStr))
+			n := notigo.NewNotification("Hypixel - Skyblock", fmt.Sprintf("You still have the following %s on you: %s.", plural("item", len(items)), itemsStr))
 			key := notigo.Key(user.notif)
 			err := key.Send(n)
 			if err != nil {
@@ -57,6 +57,14 @@ func check(user *User) {
 		}
 	}
 	user.last = itemsStr
+}
+
+func plural(s string, count int) string {
+	if count >= 2 {
+		return s + "s"
+	} else {
+		return s
+	}
 }
 
 func checkLoop(user *User) {

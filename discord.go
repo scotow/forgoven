@@ -15,9 +15,9 @@ type DiscordMessage struct {
 	Content string `json:"content"`
 }
 
-func (dn *DiscordNotifier) send(user string, items string) error {
+func (dn *DiscordNotifier) send(user string, itemsStr string, count int) error {
 	message := DiscordMessage{
-		Content: fmt.Sprintf("<@%s>, you still have the following item(s) on you: %s.", user, items),
+		Content: fmt.Sprintf("<@%s>, you still have the following %s on you: %s.", user, plural("item", count), itemsStr),
 	}
 	data, err := json.Marshal(&message)
 	if err != nil {
