@@ -1,6 +1,6 @@
 # forgoven
 
-Check for items presents in offline coop mates' inventory/enderchest and notify on Discord/IFTTT if a share item in present (Hypixel Skyblock).
+Check for items in offline coop mates' inventory/enderchest and notify on Discord/IFTTT if a share item in present (Hypixel Skyblock).
 
 ### Usage
 
