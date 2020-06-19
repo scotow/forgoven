@@ -105,7 +105,11 @@ func onlineCheckLoop(users []*User) {
 }
 
 func main() {
-	_, err := flags.Parse(&opts)
+	parser := flags.NewParser(&opts, flags.Default)
+	parser.Name = "forgoven"
+	parser.Usage = "-k HYPIXEL_API_KEY... [-d CHECK_INTERVAL] [-w DISCORD_WEBHOOK_URL] [-t DISCORD_BOT_TOKEN -c DISCORD_CHANNEL_ID] -u USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM... ..."
+
+	_, err := parser.Parse()
 	if err != nil {
 		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
 			os.Exit(0)
