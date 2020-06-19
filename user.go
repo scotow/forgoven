@@ -16,9 +16,11 @@ import (
 
 type User struct {
 	id      uuid.UUID
+	name    string
 	profile string
 	notif   string
 	object  []string
+	online  bool
 	last    string
 }
 
@@ -27,7 +29,7 @@ type MojangResponse struct {
 	Name string `json:"name"`
 }
 
-func parseUser(arg string) (*User, error) {
+func parseUser(arg string, apiKey string) (*User, error) {
 	parts := strings.Split(arg, ":")
 	if len(parts) < 4 {
 		return nil, errors.New("invalid user config")
@@ -40,6 +42,12 @@ func parseUser(arg string) (*User, error) {
 			return nil, err
 		}
 	}
+
+	pr, err := fetchProfile(id, apiKey)
+	if err != nil {
+		return nil, err
+	}
+	name := pr.Player.Name
 
 	if parts[1] == "" {
 		return nil, errors.New("invalid skyblock profile")
@@ -55,6 +63,7 @@ func parseUser(arg string) (*User, error) {
 
 	u := new(User)
 	u.id = id
+	u.name = name
 	u.profile = parts[1]
 	u.notif = parts[2]
 	u.object = parts[3:]
@@ -68,33 +77,35 @@ type OnlineResponse struct {
 	} `json:"session"`
 }
 
-func (u *User) isOnline(apiKey string) (bool, error) {
+func (u *User) updateOnline(apiKey string) error {
 	resp, err := http.Get(fmt.Sprintf("https://api.hypixel.net/status?key=%s&uuid=%s", apiKey, u.id.String()))
 	if err != nil {
-		return false, errors.New("api is offline")
+		return errors.New("api is offline")
 	}
 
 	if resp.StatusCode != 200 {
-		return false, err
+		return err
 	}
 
 	var or OnlineResponse
 	err = json.NewDecoder(resp.Body).Decode(&or)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if or.Success == false {
-		return false, errors.New("api is offline")
+		return errors.New("api is offline")
 	}
 
-	return or.Session.Online, nil
+	u.online = or.Session.Online
+	return nil
 }
 
 type ProfileResponse struct {
 	Success bool `json:"success"`
 	Player  struct {
 		Id    string `json:"uuid"`
+		Name  string `json:"displayname"`
 		Stats struct {
 			SkyBlock struct {
 				Profiles map[string]SkyblockProfile `json:"profiles"`
@@ -122,8 +133,8 @@ type SkyblockContainer struct {
 	Data string `json:"data"`
 }
 
-func (u *User) hasItems(apiKey string) ([]string, error) {
-	resp, err := http.Get(fmt.Sprintf("https://api.hypixel.net/player?key=%s&uuid=%s", apiKey, u.id.String()))
+func fetchProfile(id uuid.UUID, apiKey string) (*ProfileResponse, error) {
+	resp, err := http.Get(fmt.Sprintf("https://api.hypixel.net/player?key=%s&uuid=%s", apiKey, id.String()))
 	if err != nil {
 		return nil, errors.New("api is offline")
 	}
@@ -142,6 +153,15 @@ func (u *User) hasItems(apiKey string) ([]string, error) {
 		return nil, errors.New("api is offline")
 	}
 
+	return &pr, nil
+}
+
+func (u *User) hasItems(apiKey string) ([]string, error) {
+	pr, err := fetchProfile(u.id, apiKey)
+	if err != nil {
+		return nil, err
+	}
+
 	var sbProfile SkyblockProfile
 	found := false
 	for _, v := range pr.Player.Stats.SkyBlock.Profiles {
@@ -155,7 +175,7 @@ func (u *User) hasItems(apiKey string) ([]string, error) {
 		return nil, errors.New("cannot find skyblock profile")
 	}
 
-	resp, err = http.Get(fmt.Sprintf("https://api.hypixel.net/skyblock/profile?key=%s&profile=%s", apiKey, sbProfile.ProfileId))
+	resp, err := http.Get(fmt.Sprintf("https://api.hypixel.net/skyblock/profile?key=%s&profile=%s", apiKey, sbProfile.ProfileId))
 	if err != nil {
 		return nil, errors.New("api is offline")
 	}

@@ -1,40 +1,49 @@
 package main
 
 import (
-	"flag"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/jessevdk/go-flags"
 	"github.com/scotow/notigo"
 )
 
-var (
-	apiKey         = flag.String("k", "", "hypixel API key")
-	checkInterval  = flag.Duration("d", time.Minute, "time between two checks")
-	discordWebhook = flag.String("w", "", "webhook url used to notify users on discord")
-)
+var opts struct {
+	ApiKeys         []string      `short:"k" description:"Hypixel API key(s)" required:"true"`
+	CheckInterval   time.Duration `short:"d" description:"Time between two checks" default:"1m"`
+	DiscordWebhook  string        `short:"w" description:"Webhook url used to notify users on discord"`
+	Users           []string      `short:"u" description:"USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM..." required:"true"`
+	DiscordBotToken string        `short:"t" description:"Discord token used to update channel topic with online players"`
+	DiscordChannel  string        `short:"c" description:"Discord channel id used to update channel topic with online players"`
+}
 
 var (
+	keys Keys
+
 	discordNameRegex = regexp.MustCompile(`^\d{18}$`)
 	discordNotifier  *DiscordNotifier
 )
 
 func check(user *User) {
-	online, err := user.isOnline(*apiKey)
+	err := user.updateOnline(keys.nextKey())
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	if online {
+	if user.online {
 		user.last = ""
 		return
 	}
 
-	items, err := user.hasItems(*apiKey)
+	items, err := user.hasItems(keys.nextKey())
 	if err != nil {
 		log.Println(err)
 		return
@@ -67,32 +76,86 @@ func plural(s string, count int) string {
 	}
 }
 
-func checkLoop(user *User) {
+func itemsCheckLoop(user *User) {
 	for {
 		check(user)
-		time.Sleep(*checkInterval)
+		time.Sleep(opts.CheckInterval)
+	}
+}
+
+func onlineCheckLoop(users []*User) {
+	lastOnlineStr := ""
+	for {
+		online := make([]string, 0)
+		for _, u := range users {
+			if u.online {
+				online = append(online, u.name)
+			}
+		}
+		onlineStr := strings.Join(online, ", ")
+
+		if onlineStr != lastOnlineStr {
+			if onlineStr == "" {
+				updateChannelTopic("")
+			} else {
+				updateChannelTopic(fmt.Sprintf("Online on Hypixel: %s", onlineStr))
+			}
+			lastOnlineStr = onlineStr
+		}
+		time.Sleep(opts.CheckInterval)
+	}
+}
+
+func updateChannelTopic(topic string) {
+	payload, err := json.Marshal(struct {
+		Topic string `json:"topic"`
+	}{
+		Topic: topic,
+	})
+	if err != nil {
+		log.Println(err)
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("https://discordapp.com/api/channels/%s", opts.DiscordChannel), bytes.NewBuffer(payload))
+	if err != nil {
+		log.Println(err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", opts.DiscordBotToken))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "Forgoven")
+
+	_, err = http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println(err)
 	}
 }
 
 func main() {
-	flag.Parse()
+	_, err := flags.Parse(&opts)
+	if err != nil {
+		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
+			os.Exit(0)
+		} else {
+			os.Exit(1)
+		}
+	}
 
-	if *apiKey == "" {
+	if len(opts.ApiKeys) == 0 {
 		log.Fatalln("invalid hypixel api key")
 	}
+	keys = NewKeys(opts.ApiKeys)
 
-	if *discordWebhook != "" {
-		discordNotifier = &DiscordNotifier{url: *discordWebhook}
+	if opts.DiscordWebhook != "" {
+		discordNotifier = &DiscordNotifier{url: opts.DiscordWebhook}
 	}
 
-	args := flag.Args()
-	if len(args) == 0 {
+	if len(opts.Users) == 0 {
 		log.Fatalln("invalid number of user")
 	}
 
-	users := make([]*User, 0, len(args))
-	for _, a := range args {
-		u, err := parseUser(a)
+	users := make([]*User, 0, len(opts.Users))
+	for _, a := range opts.Users {
+		u, err := parseUser(a, keys.nextKey())
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -100,7 +163,11 @@ func main() {
 	}
 
 	for _, u := range users {
-		go checkLoop(u)
+		go itemsCheckLoop(u)
+	}
+
+	if opts.DiscordBotToken != "" && opts.DiscordChannel != "" {
+		go onlineCheckLoop(users)
 	}
 
 	<-make(chan struct{})
