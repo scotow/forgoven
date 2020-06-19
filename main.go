@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -27,8 +24,9 @@ var opts struct {
 var (
 	keys Keys
 
-	discordNameRegex = regexp.MustCompile(`^\d{18}$`)
-	discordNotifier  *DiscordNotifier
+	discordNameRegex    = regexp.MustCompile(`^\d{18}$`)
+	discordNotifier     *DiscordNotifier
+	discordTopicChanger *DiscordTopicChanger
 )
 
 func check(user *User) {
@@ -96,37 +94,13 @@ func onlineCheckLoop(users []*User) {
 
 		if onlineStr != lastOnlineStr {
 			if onlineStr == "" {
-				updateChannelTopic("")
+				discordTopicChanger.change("")
 			} else {
-				updateChannelTopic(fmt.Sprintf("Online on Hypixel: %s", onlineStr))
+				discordTopicChanger.change(fmt.Sprintf("Online on Hypixel: %s", onlineStr))
 			}
 			lastOnlineStr = onlineStr
 		}
 		time.Sleep(opts.CheckInterval)
-	}
-}
-
-func updateChannelTopic(topic string) {
-	payload, err := json.Marshal(struct {
-		Topic string `json:"topic"`
-	}{
-		Topic: topic,
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("https://discordapp.com/api/channels/%s", opts.DiscordChannel), bytes.NewBuffer(payload))
-	if err != nil {
-		log.Println(err)
-	}
-	req.Header.Set("Authorization", fmt.Sprintf("Bot %s", opts.DiscordBotToken))
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Forgoven")
-
-	_, err = http.DefaultClient.Do(req)
-	if err != nil {
-		log.Println(err)
 	}
 }
 
@@ -167,6 +141,7 @@ func main() {
 	}
 
 	if opts.DiscordBotToken != "" && opts.DiscordChannel != "" {
+		discordTopicChanger = NewDiscordTopicChanger(opts.DiscordBotToken, opts.DiscordChannel)
 		go onlineCheckLoop(users)
 	}
 
