@@ -162,6 +162,10 @@ func (u *User) hasItems(apiKey string) ([]string, error) {
 		return nil, err
 	}
 
+	if pr.Player.Stats.SkyBlock.Profiles == nil {
+		return nil, errors.New("cannot find skyblock profile")
+	}
+
 	var sbProfile SkyblockProfile
 	found := false
 	for _, v := range pr.Player.Stats.SkyBlock.Profiles {
@@ -192,6 +196,10 @@ func (u *User) hasItems(apiKey string) ([]string, error) {
 
 	if pr.Success == false {
 		return nil, errors.New("api is offline")
+	}
+
+	if sr.Profile.Members == nil {
+		return nil, errors.New("cannot find skyblock member")
 	}
 
 	member, ok := sr.Profile.Members[pr.Player.Id]
