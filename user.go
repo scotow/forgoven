@@ -83,8 +83,8 @@ func (u *User) updateOnline(apiKey string) error {
 		return errors.New("api is offline")
 	}
 
-	if resp.StatusCode != 200 {
-		return err
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("invalid api status code")
 	}
 
 	var or OnlineResponse
@@ -139,8 +139,8 @@ func fetchProfile(id uuid.UUID, apiKey string) (*ProfileResponse, error) {
 		return nil, errors.New("api is offline")
 	}
 
-	if resp.StatusCode != 200 {
-		return nil, err
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("invalid api status code")
 	}
 
 	var pr ProfileResponse
@@ -184,8 +184,8 @@ func (u *User) hasItems(apiKey string) ([]string, error) {
 		return nil, errors.New("api is offline")
 	}
 
-	if resp.StatusCode != 200 {
-		return nil, err
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("invalid api status code")
 	}
 
 	var sr SkyblockResponse
@@ -251,7 +251,7 @@ func fetchUuid(name string) (uuid.UUID, error) {
 		return id, err
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return id, errors.New("invalid mojang response")
 	}
 
