@@ -66,7 +66,7 @@ func (dpc *DiscordTopicChanger) change(topic string) {
 		log.Println(err)
 	}
 
-	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("https://discordapp.com/api/channels/%s", dpc.channel), bytes.NewBuffer(payload))
+	req, err := http.NewRequest(http.MethodPatch, fmt.Sprintf("https://discord.com/api/channels/%s", dpc.channel), bytes.NewBuffer(payload))
 	if err != nil {
 		log.Println(err)
 	}
