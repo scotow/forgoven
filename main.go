@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	"github.com/jessevdk/go-flags"
 	"log"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/scotow/notigo"
 )
 
@@ -19,6 +19,7 @@ var opts struct {
 	Users           []string      `short:"u" description:"USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM..." required:"true"`
 	DiscordBotToken string        `short:"t" description:"Discord token used to update channel topic with online players"`
 	DiscordChannel  string        `short:"c" description:"Discord channel id used to update channel topic with online players"`
+	Zoo             bool          `short:"z" description:"Check for Zoo pet and send it on Discord"`
 }
 
 var (
@@ -50,7 +51,7 @@ func check(user *User) {
 	itemsStr := strings.Join(items, ", ")
 	if len(items) > 0 && user.last != itemsStr {
 		if discordNotifier != nil && discordNameRegex.MatchString(user.notif) {
-			err := discordNotifier.send(user.notif, itemsStr, len(items))
+			err := discordNotifier.sendForget(user.notif, itemsStr, len(items))
 			if err != nil {
 				log.Println(err)
 			}
@@ -104,10 +105,37 @@ func onlineCheckLoop(users []*User) {
 	}
 }
 
+func zooCheckLoop() {
+	lastDate, _, err := fetchLatestPets()
+	if err != nil {
+		log.Println(err)
+	}
+
+	for {
+		time.Sleep(time.Minute)
+
+		currentDate, pets, err := fetchLatestPets()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		if currentDate == lastDate {
+			continue
+		}
+		lastDate = currentDate
+
+		err = discordNotifier.sendZoo(pets)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
+
 func main() {
 	parser := flags.NewParser(&opts, flags.Default)
 	parser.Name = "forgoven"
-	parser.Usage = "-k HYPIXEL_API_KEY... [-d CHECK_INTERVAL] [-w DISCORD_WEBHOOK_URL] [-t DISCORD_BOT_TOKEN -c DISCORD_CHANNEL_ID] -u USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM... ..."
+	parser.Usage = "-k HYPIXEL_API_KEY... [-d CHECK_INTERVAL] [-w DISCORD_WEBHOOK_URL [-z]] [-t DISCORD_BOT_TOKEN -c DISCORD_CHANNEL_ID] -u USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM... ..."
 
 	_, err := parser.Parse()
 	if err != nil {
@@ -125,6 +153,10 @@ func main() {
 
 	if opts.DiscordWebhook != "" {
 		discordNotifier = &DiscordNotifier{url: opts.DiscordWebhook}
+
+		if opts.Zoo {
+			go zooCheckLoop()
+		}
 	}
 
 	if len(opts.Users) == 0 {

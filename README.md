@@ -6,7 +6,7 @@ Check for items in offline coop mates' inventory/enderchest and notify on Discor
 
 ```sh
 Usage:
-  forgoven -k HYPIXEL_API_KEY... [-d CHECK_INTERVAL] [-w DISCORD_WEBHOOK_URL] [-t DISCORD_BOT_TOKEN -c DISCORD_CHANNEL_ID] -u USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM... ...
+  forgoven -k HYPIXEL_API_KEY... [-d CHECK_INTERVAL] [-w DISCORD_WEBHOOK_URL [-z]] [-t DISCORD_BOT_TOKEN -c DISCORD_CHANNEL_ID] -u USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM... ...
 
 Application Options:
   -k=         Hypixel API key(s)
@@ -15,6 +15,7 @@ Application Options:
   -u=         USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM...
   -t=         Discord token used to update channel topic with online players
   -c=         Discord channel id used to update channel topic with online players
+  -z=         Check for Zoo pet and send it on Discord
 
 Help Options:
   -h, --help  Show this help message
@@ -24,7 +25,7 @@ Help Options:
 
 ```sh
 forgoven \
-    -d 8s
+    -d 8s -z
     -k c447489f-52fe-4231-872c-803d17902e96 \
     -w https://discordapp.com/api/webhooks/758919348577719200/Sqs49JcaEo6N4vqctbsfwl0E6Jr-0XxpFUy8JdFQjGKWrYE9oLHn4Dsf9mNplucj1436 \
     -t AAAAAAAAAA.AAAAAA.AAAAAAAA -c 123456789012345678
@@ -38,4 +39,5 @@ The command above:
 - notify the user *Scotow* with [notigo](https://github.com/scotow/notigo) if he is disconnected with a *Stonk* item in his inventory/enderchest;
 - notify the user *lrdoz* on Discord if he is disconnected with a *Stonk* or an *Aspect of the Dragon* item in his inventory/enderchest;
 - notify the user *boinc* on Discord if he is disconnected with a *Stonk* or any *Minion* in his inventory/enderchest.
-- update channel topic (id 123456789012345678) with the the list of online players
+- update channel topic (id 123456789012345678) with the list of online players
+- send available pets in the village

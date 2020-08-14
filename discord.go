@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,9 +20,9 @@ type DiscordMessage struct {
 	Content string `json:"content"`
 }
 
-func (dn *DiscordNotifier) send(user string, itemsStr string, count int) error {
+func (dn *DiscordNotifier) send(str string) error {
 	message := DiscordMessage{
-		Content: fmt.Sprintf("<@%s>, you still have the following %s on you: %s.", user, plural("item", count), itemsStr),
+		Content: str,
 	}
 	data, err := json.Marshal(&message)
 	if err != nil {
@@ -30,6 +31,18 @@ func (dn *DiscordNotifier) send(user string, itemsStr string, count int) error {
 
 	_, err = http.Post(dn.url, "application/json", bytes.NewBuffer(data))
 	return err
+}
+
+func (dn *DiscordNotifier) sendForget(user string, itemsStr string, count int) error {
+	return dn.send(fmt.Sprintf("<@%s>, you still have the following %s on you: %s.", user, plural("item", count), itemsStr))
+}
+
+func (dn *DiscordNotifier) sendZoo(pets []string) error {
+	for i, p := range pets {
+		pets[i] = fmt.Sprintf("    - %s", p)
+	}
+
+	return dn.send(fmt.Sprintf("Oringo has brought the following pets to the village:\n%s\n\nCheck the prices here: https://hypixel-skyblock.fandom.com/wiki/Traveling_Zoo.", strings.Join(pets, "\n")))
 }
 
 type DiscordTopicChanger struct {
