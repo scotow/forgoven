@@ -15,7 +15,7 @@ Application Options:
   -u=         USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM...
   -t=         Discord token used to update channel topic with online players
   -c=         Discord channel id used to update channel topic with online players
-  -z=         Check for Zoo pet and send it on Discord
+  -z          Check for Zoo pet and send it on Discord
 
 Help Options:
   -h, --help  Show this help message
