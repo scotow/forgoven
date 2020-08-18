@@ -84,7 +84,7 @@ func (u *User) updateOnline(apiKey string) error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("invalid api status code")
+		return errors.New(fmt.Sprintf("invalid status code: %d", resp.StatusCode))
 	}
 
 	var or OnlineResponse
@@ -140,7 +140,7 @@ func fetchProfile(id uuid.UUID, apiKey string) (*ProfileResponse, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("invalid api status code")
+		return nil, errors.New(fmt.Sprintf("invalid status code: %d", resp.StatusCode))
 	}
 
 	var pr ProfileResponse
@@ -185,7 +185,7 @@ func (u *User) hasItems(apiKey string) ([]string, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("invalid api status code")
+		return nil, errors.New(fmt.Sprintf("invalid status code: %d", resp.StatusCode))
 	}
 
 	var sr SkyblockResponse
