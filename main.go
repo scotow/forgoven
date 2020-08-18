@@ -83,25 +83,17 @@ func itemsCheckLoop(user *User) {
 }
 
 func onlineCheckLoop(users []*User) {
-	lastOnlineStr := ""
-	for {
-		online := make([]string, 0)
-		for _, u := range users {
-			if u.online {
-				online = append(online, u.name)
-			}
-		}
-		onlineStr := strings.Join(online, ", ")
+	lastOnlineStr := onlineString(users)
+	updateTopic(lastOnlineStr)
 
-		if onlineStr != lastOnlineStr {
-			if onlineStr == "" {
-				discordTopicChanger.change("")
-			} else {
-				discordTopicChanger.change(fmt.Sprintf("Online on Hypixel: %s", onlineStr))
-			}
-			lastOnlineStr = onlineStr
-		}
+	for {
 		time.Sleep(opts.CheckInterval)
+
+		online := onlineString(users)
+		if online != lastOnlineStr {
+			updateTopic(online)
+			lastOnlineStr = online
+		}
 	}
 }
 
