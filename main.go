@@ -76,6 +76,8 @@ func plural(s string, count int) string {
 }
 
 func itemsCheckLoop(user *User) {
+	log.Println("items check loop started")
+
 	for {
 		check(user)
 		time.Sleep(opts.CheckInterval)
@@ -83,6 +85,8 @@ func itemsCheckLoop(user *User) {
 }
 
 func onlineCheckLoop(users []*User) {
+	log.Println("online check loop started")
+
 	lastOnlineStr := onlineString(users)
 	updateTopic(lastOnlineStr)
 
@@ -98,6 +102,8 @@ func onlineCheckLoop(users []*User) {
 }
 
 func zooCheckLoop() {
+	log.Println("zoo check loop started")
+
 	lastDate, _, err := fetchLatestPets()
 	if err != nil {
 		log.Println(err)
