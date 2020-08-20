@@ -36,7 +36,7 @@ Help Options:
 
 ```sh
 forgoven \
-    -d 8s -z
+    -d 8s -z \
     -k c447489f-52fe-4231-872c-803d17902e96 \
     -w https://discordapp.com/api/webhooks/758919348577719200/Sqs49JcaEo6N4vqctbsfwl0E6Jr-0XxpFUy8JdFQjGKWrYE9oLHn4Dsf9mNplucj1436 \
     -t AAAAAAAAAA.AAAAAA.AAAAAAAA -c 123456789012345678
