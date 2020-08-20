@@ -295,6 +295,9 @@ func (u *User) newCompletedAuctions(apiKey string) ([]string, error) {
 		if a.HighestBid == 0 {
 			continue
 		}
+		if !u.isAuctionItemTracked(a.Name) {
+			continue
+		}
 		if u.alreadyHasNotifiedAuction(a.Id) {
 			continue
 		}
@@ -308,6 +311,16 @@ func (u *User) newCompletedAuctions(apiKey string) ([]string, error) {
 	}
 
 	return newAuctions, nil
+}
+
+func (u *User) isAuctionItemTracked(name string) bool {
+	name = strings.ToLower(name)
+	for _, a := range u.auctions {
+		if strings.Contains(name, strings.ToLower(a)) {
+			return true
+		}
+	}
+	return false
 }
 
 func (u *User) alreadyHasNotifiedAuction(id string) bool {
