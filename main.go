@@ -108,7 +108,7 @@ func checkAuctions(user *User) {
 			log.Println(err)
 		}
 	} else {
-		n := notigo.NewNotification("Hypixel - Skyblock", fmt.Sprintf("Your following %s has been sold at the auction house: %s.", plural("item", len(newAuctions)), itemsStr))
+		n := notigo.NewNotification("Hypixel - Skyblock", fmt.Sprintf("Your following %s has been sold at the auctions house: %s.", plural("item", len(newAuctions)), itemsStr))
 		key := notigo.Key(user.notif)
 		err := key.Send(n)
 		if err != nil {
