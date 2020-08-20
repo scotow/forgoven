@@ -46,9 +46,9 @@ forgoven \
 ```
 
 The command above:
-- check inventory every 8s (3 players - 8s - 3 calls ~= 68 calls per minute, limit is 120)
-- send Oringo's today pets in the channel
+- check inventory every 8s (3 players - 8s - 3 calls ~= 68 calls per minute, limit is 120);
+- send Oringo's today pets in the channel;
 - notify the user *Scotow* with [notigo](https://github.com/scotow/notigo) if he is disconnected with a *Stonk* item in his inventory/enderchest;
 - notify the user *lrdoz* on Discord if he is disconnected with a *Stonk* or an *Aspect of the Dragon* item in his inventory/enderchest;
-- notify the user *boinc* on Discord if he is disconnected with a *Stonk* or any *Minion* in his inventory/enderchest.
-- update channel topic (id 123456789012345678) with the list of online players
+- notify the user *boinc* on Discord if he is disconnected with a *Stonk* or any *Minion* in his inventory/enderchest;
+- update channel topic (id 123456789012345678) with the list of online players.
