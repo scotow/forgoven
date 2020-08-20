@@ -16,7 +16,7 @@ var opts struct {
 	ApiKeys         []string      `short:"k" description:"Hypixel API key(s)" required:"true"`
 	CheckInterval   time.Duration `short:"d" description:"Time between two checks" default:"1m"`
 	DiscordWebhook  string        `short:"w" description:"Webhook url used to notify users on discord"`
-	Users           []string      `short:"u" description:"USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM..." required:"true"`
+	Users           []string      `short:"u" description:"USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM,...:AUCTION,..." required:"true"`
 	DiscordBotToken string        `short:"t" description:"Discord token used to update channel topic with online players"`
 	DiscordChannel  string        `short:"c" description:"Discord channel id used to update channel topic with online players"`
 	Zoo             bool          `short:"z" description:"Check for Zoo pet and send it on Discord"`
@@ -30,7 +30,7 @@ var (
 	discordTopicChanger *DiscordTopicChanger
 )
 
-func check(user *User) {
+func checkForgotItems(user *User) {
 	err := user.updateOnline(keys.nextKey())
 	if err != nil {
 		log.Println(err)
@@ -82,8 +82,38 @@ func itemsCheckLoop(user *User) {
 
 	log.Println("items check loop started")
 	for {
-		check(user)
+		checkForgotItems(user)
 		time.Sleep(opts.CheckInterval)
+	}
+}
+
+func checkAuctions(user *User) {
+	newAuctions, err := user.newCompletedAuctions(keys.nextKey())
+	if err != nil {
+		log.Println(err)
+	}
+
+	if user.online {
+		return
+	}
+
+	if len(newAuctions) == 0 {
+		return
+	}
+
+	itemsStr := strings.Join(newAuctions, ", ")
+	if discordNotifier != nil && discordNameRegex.MatchString(user.notif) {
+		err := discordNotifier.sendAuctionCompleted(user.notif, itemsStr, len(newAuctions))
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		n := notigo.NewNotification("Hypixel - Skyblock", fmt.Sprintf("Your following %s has been sold at the auction house: %s.", plural("item", len(newAuctions)), itemsStr))
+		key := notigo.Key(user.notif)
+		err := key.Send(n)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -94,28 +124,7 @@ func auctionsCheckLoop(user *User) {
 
 	log.Println("auctions check loop started")
 	for {
-		newAuctions, err := user.newCompletedAuctions(keys.nextKey())
-		if err != nil {
-			log.Println(err)
-		}
-
-		if len(newAuctions) > 0 {
-			itemsStr := strings.Join(newAuctions, ", ")
-			if discordNotifier != nil && discordNameRegex.MatchString(user.notif) {
-				err := discordNotifier.sendAuctionCompleted(user.notif, itemsStr, len(newAuctions))
-				if err != nil {
-					log.Println(err)
-				}
-			} else {
-				n := notigo.NewNotification("Hypixel - Skyblock", fmt.Sprintf("Your following %s has been sold at the auction house: %s.", plural("item", len(newAuctions)), itemsStr))
-				key := notigo.Key(user.notif)
-				err := key.Send(n)
-				if err != nil {
-					log.Println(err)
-				}
-			}
-		}
-
+		checkAuctions(user)
 		time.Sleep(opts.CheckInterval)
 	}
 }
@@ -169,7 +178,7 @@ func zooCheckLoop() {
 func main() {
 	parser := flags.NewParser(&opts, flags.Default)
 	parser.Name = "forgoven"
-	parser.Usage = "-k HYPIXEL_API_KEY... [-d CHECK_INTERVAL] [-w DISCORD_WEBHOOK_URL [-z]] [-t DISCORD_BOT_TOKEN -c DISCORD_CHANNEL_ID] -u USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM... ..."
+	parser.Usage = "-k HYPIXEL_API_KEY... [-d CHECK_INTERVAL] [-w DISCORD_WEBHOOK_URL [-z]] [-t DISCORD_BOT_TOKEN -c DISCORD_CHANNEL_ID] -u USERNAME|MINECRAFT_UUID:SKYBLOCK_PROFILE:DISCORD_USER_ID|NOTIGO_KEY:ITEM,...:AUCTION,... ..."
 
 	_, err := parser.Parse()
 	if err != nil {
