@@ -76,10 +76,46 @@ func plural(s string, count int) string {
 }
 
 func itemsCheckLoop(user *User) {
-	log.Println("items check loop started")
+	if len(user.items) == 0 {
+		return
+	}
 
+	log.Println("items check loop started")
 	for {
 		check(user)
+		time.Sleep(opts.CheckInterval)
+	}
+}
+
+func auctionsCheckLoop(user *User) {
+	if len(user.auctions) == 0 {
+		return
+	}
+
+	log.Println("auctions check loop started")
+	for {
+		newAuctions, err := user.newCompletedAuctions(keys.nextKey())
+		if err != nil {
+			log.Println(err)
+		}
+
+		if len(newAuctions) > 0 {
+			itemsStr := strings.Join(newAuctions, ", ")
+			if discordNotifier != nil && discordNameRegex.MatchString(user.notif) {
+				err := discordNotifier.sendAuctionCompleted(user.notif, itemsStr, len(newAuctions))
+				if err != nil {
+					log.Println(err)
+				}
+			} else {
+				n := notigo.NewNotification("Hypixel - Skyblock", fmt.Sprintf("Your following %s has been sold at the auction house: %s.", plural("item", len(newAuctions)), itemsStr))
+				key := notigo.Key(user.notif)
+				err := key.Send(n)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
+
 		time.Sleep(opts.CheckInterval)
 	}
 }
@@ -172,6 +208,7 @@ func main() {
 
 	for _, u := range users {
 		go itemsCheckLoop(u)
+		go auctionsCheckLoop(u)
 	}
 
 	if opts.DiscordBotToken != "" && opts.DiscordChannel != "" {

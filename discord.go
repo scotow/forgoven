@@ -37,6 +37,10 @@ func (dn *DiscordNotifier) sendForget(user string, itemsStr string, count int) e
 	return dn.send(fmt.Sprintf("<@%s>, you still have the following %s on you: %s.", user, plural("item", count), itemsStr))
 }
 
+func (dn *DiscordNotifier) sendAuctionCompleted(user string, itemsStr string, count int) error {
+	return dn.send(fmt.Sprintf("<@%s>, your following %s has been sold at the auction house: %s.", user, plural("item", count), itemsStr))
+}
+
 func (dn *DiscordNotifier) sendZoo(pets []string) error {
 	for i, p := range pets {
 		pets[i] = fmt.Sprintf("    - %s", p)

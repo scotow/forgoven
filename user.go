@@ -15,13 +15,16 @@ import (
 )
 
 type User struct {
-	id      uuid.UUID
-	name    string
-	profile string
-	notif   string
-	object  []string
-	online  bool
-	last    string
+	id               uuid.UUID
+	shortId          string
+	name             string
+	profile          string
+	notif            string
+	items            []string
+	auctions         []string
+	notifiedAuctions []string
+	online           bool
+	last             string
 }
 
 type MojangResponse struct {
@@ -31,7 +34,7 @@ type MojangResponse struct {
 
 func parseUser(arg string, apiKey string) (*User, error) {
 	parts := strings.Split(arg, ":")
-	if len(parts) < 4 {
+	if len(parts) < 3 {
 		return nil, errors.New("invalid user config")
 	}
 
@@ -55,18 +58,35 @@ func parseUser(arg string, apiKey string) (*User, error) {
 	if parts[2] == "" {
 		return nil, errors.New("invalid notigo key or discord name")
 	}
-	for _, p := range parts[3:] {
-		if p == "" {
-			return nil, errors.New("invalid object name(s)")
+
+	items := make([]string, 0)
+	if len(parts) >= 4 {
+		for _, i := range strings.Split(parts[3], ",") {
+			if len(i) > 0 {
+				items = append(items, i)
+			}
+		}
+	}
+
+	auctions := make([]string, 0)
+	if len(parts) >= 5 {
+		for _, a := range strings.Split(parts[4], ",") {
+			if len(a) > 0 {
+				auctions = append(auctions, a)
+			}
 		}
 	}
 
 	u := new(User)
 	u.id = id
+	u.shortId = strings.ReplaceAll(u.id.String(), "-", "")
 	u.name = name
 	u.profile = parts[1]
 	u.notif = parts[2]
-	u.object = parts[3:]
+	u.items = items
+	u.auctions = auctions
+	u.notifiedAuctions = make([]string, 0)
+
 	return u, nil
 }
 
@@ -127,6 +147,16 @@ type SkyblockResponse struct {
 			Enderchest SkyblockContainer `json:"ender_chest_contents"`
 		} `json:"members"`
 	} `json:"profile"`
+}
+
+type SkyblockAuctionResponse struct {
+	Success  bool `json:"success"`
+	Auctions []struct {
+		Id         string `json:"uuid"`
+		Name       string `json:"item_name"`
+		Bin        bool   `json:"bin"`
+		HighestBid int    `json:"highest_bid_amount"`
+	} `json:"auctions"`
 }
 
 type SkyblockContainer struct {
@@ -228,13 +258,65 @@ func (u *User) hasItems(apiKey string) ([]string, error) {
 	}
 
 	items := make([]string, 0)
-	for _, i := range u.object {
+	for _, i := range u.items {
 		if bytes.Contains(inv, []byte(i)) || bytes.Contains(enderchest, []byte(i)) {
 			items = append(items, i)
 		}
 	}
 
 	return items, nil
+}
+
+func (u *User) newCompletedAuctions(apiKey string) ([]string, error) {
+	resp, err := http.Get(fmt.Sprintf("https://api.hypixel.net/skyblock/auction?key=%s&player=%s", apiKey, u.shortId))
+	if err != nil {
+		return nil, errors.New("api is offline")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("invalid status code: %d", resp.StatusCode))
+	}
+
+	var sar SkyblockAuctionResponse
+	err = json.NewDecoder(resp.Body).Decode(&sar)
+	if err != nil {
+		return nil, err
+	}
+
+	if sar.Success == false {
+		return nil, errors.New("api is offline")
+	}
+
+	newAuctions := make([]string, 0)
+	for _, a := range sar.Auctions {
+		if !a.Bin {
+			continue
+		}
+		if a.HighestBid == 0 {
+			continue
+		}
+		if u.alreadyHasNotifiedAuction(a.Id) {
+			continue
+		}
+
+		newAuctions = append(newAuctions, a.Name)
+		u.notifiedAuctions = append(u.notifiedAuctions, a.Id)
+	}
+
+	if len(sar.Auctions) == 0 {
+		u.notifiedAuctions = make([]string, 0)
+	}
+
+	return newAuctions, nil
+}
+
+func (u *User) alreadyHasNotifiedAuction(id string) bool {
+	for _, na := range u.notifiedAuctions {
+		if na == id {
+			return true
+		}
+	}
+	return false
 }
 
 func fetchUuid(name string) (uuid.UUID, error) {
