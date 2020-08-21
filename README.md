@@ -3,6 +3,7 @@
 ### Features
 
 - Check for items in offline coop mates' inventory/enderchest and notify them on Discord/IFTTT if a shared item is present (Hypixel Skyblock);
+- Check for sales of offline coop mates' BIN auctions;
 - Set Discord Channel's topic with online players;
 - Send a message in a Discord channel with Oringo's today pets.
 
@@ -47,9 +48,9 @@ forgoven \
 
 The command above:
 - check inventory every 8s (3 players - 8s - 3 calls ~= 68 calls per minute, limit is 120);
-- send Oringo's today pets in the channel;
+- send Oringo's today pets in the Discord channel;
 - notify the user *Scotow* with [notigo](https://github.com/scotow/notigo) if he is disconnected with a *Stonk* item in his inventory/enderchest;
-- notify the user *Scotow* with [notigo](https://github.com/scotow/notigo) if a BIN has been completed matching the *Scorpion* string;
+- notify the user *Scotow* with [notigo](https://github.com/scotow/notigo) if a BIN auction has been completed matching the *Scorpion* string;
 - notify the user *lrdoz* on Discord if he is disconnected with a *Stonk* or an *Aspect of the Dragon* item in his inventory/enderchest;
 - notify the user *boinc* on Discord if he is disconnected with a *Stonk* or any *Minion* in his inventory/enderchest;
 - update channel topic (id 123456789012345678) with the list of online players.
